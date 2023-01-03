@@ -6,54 +6,38 @@ const data = fs.readFileSync(filepath).toString().trimEnd();
 
 let list = data.split("\n").map(l => parseInt(l));
 
-// Part 1
-function mix(list) {
-  let indices = list.map((v,index) => index);
+function mix(list, iterations=1) {
+  let indices = [...list.keys()];
   
-  while (indices.length > 0) {
-    const oldIdx = indices.shift();
-    const value = list[oldIdx];
-    let newIdx = oldIdx + value;
-    if (newIdx > list.length) {
-      newIdx = (newIdx + 1) % list.length;
-    } else if (newIdx < 0) {
-      newIdx = newIdx + Math.ceil(-1*newIdx/list.length)*list.length - 1;
+  for (let iteration=0; iteration < iterations; iteration++) {
+    for (let i = 0; i < indices.length; i++) {
+      const oldIdx = indices[i];
+      let newIdx = oldIdx + list[i];
+      if (newIdx > list.length) {
+        newIdx = newIdx % (list.length-1);
+      } else if (newIdx < 0) {
+        newIdx = newIdx + Math.ceil(-1*newIdx/(list.length-1))*(list.length - 1);
+      }
+    
+      if (newIdx > oldIdx) {
+        indices = indices.map(v => (v <= newIdx && v > oldIdx) ? v-1 : v)
+      } else if (newIdx < oldIdx) {
+        indices = indices.map(v => (v >= newIdx && v < oldIdx) ? v+1 : v)
+      }
+      indices[i] = newIdx;
     }
-  
-    if (newIdx < 0) {
-      console.log("Wrong index");
-    }
-  
-    let newList = [];
-    if (newIdx > oldIdx) {
-      newList = [].concat(
-        list.slice(0, oldIdx),
-        list.slice(oldIdx+1, newIdx+1),
-        value,
-        list.slice(newIdx+1)
-      );
-      indices = indices.map(v => (v <= newIdx && v > oldIdx) ? v-1 : v)
-    } else if (newIdx < oldIdx) {
-      newList = [].concat(
-        list.slice(0, newIdx),
-        value,
-        list.slice(newIdx, oldIdx),
-        list.slice(oldIdx+1)
-      );
-      indices = indices.map(v => (v >= newIdx && v < oldIdx) ? v+1 : v)
-    } else {
-      console.log("Same index?");
-      newList = list;
-    }
-    console.log("Processed value: " + value);
-    list = newList;
   }
-  return list;
+
+  // Rebuild list with new positions
+  let mixedList = new Array(indices.length);
+  indices.forEach((newIdx,oldIdx) => mixedList[newIdx] = list[oldIdx]);
+  let idx_0 = mixedList.findIndex((v) => v === 0);
+  return [1e3,2e3,3e3].reduce((prev, n) => prev + mixedList[(idx_0+n) % mixedList.length], 0);;
 }
 
-let mixedList = mix(list);
-let idx_0 = mixedList.findIndex((v) => v === 0);
-let nums = [1e3,2e3,3e3].map((n) => mixedList[(idx_0+n) % mixedList.length]);
-let sum = [1e3,2e3,3e3].reduce((prev, n) => prev + mixedList[(idx_0+n) % mixedList.length], 0)
+// Part 1
+console.log("Part 1: " + mix(list, 1));  
 
-console.log("Part 1: " + sum);
+// Part 2
+const decriptionKey = 811589153;
+console.log("Part 2: " + mix(list.map(v => v*decriptionKey), 10));  
